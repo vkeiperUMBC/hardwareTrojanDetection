@@ -116,11 +116,9 @@ def constructEdgeList(nodes, io_nodes):
     for node in nodes:
         assList[0].append(node.name)
         assList[1].append(node.conn_id)
-    for node in nodes:
-        if node.gate_type == "wire":
+    # for node in nodes:
+    #     if node.gate_type == "wire":
             
-
-
     for node in io_nodes:
         for conn in node.conn_names:
             if conn in assList[0]:
@@ -132,9 +130,6 @@ def constructEdgeList(nodes, io_nodes):
                 edges[0].append(node.conn_id)
                 edges[1].append(assList[1][assList[0].index(conn)])
     return edges;
-
-
-
 
 def read_verilog_file(filepath):
     with open(filepath, 'r') as file:
