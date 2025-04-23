@@ -31,8 +31,8 @@ def format_verilog_file(input_filepath, output_filepath):
         outfile.write("\n".join(formatted_lines) + "\n")
 
 # Input and output file paths
-input_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\uart.v"
-output_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\uart_formatted.v"
+input_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\simple_test.v"
+output_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\simple_test_formatted.v"
 
 # Format the Verilog file
 format_verilog_file(input_filepath, output_filepath)
