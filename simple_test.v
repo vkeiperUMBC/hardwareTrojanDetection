@@ -1,26 +1,25 @@
-module simple_circuit (
-    input A, B, C, D,
-    output E, F, G, H
-);
+module simple_circuit ( A, B, C, E, F, G, H);
+    input wire A, 
+    B, 
+    C; 
+    output wire E, //thing
+    F, 
+    G, 
+    H;
+    wire INTERMEDIATE1, INTERMEDIATE2; 
 
-    // Internal wires
-    wire W1, W2, W3, W4, W5, W6, W7, W8, W9, W10;
+    assign E = AND_OUT; // Output E is the result of the first AND gate
+    assign F = OR_OUT;  // Output F is the result of the OR gate    
+    assign G = INV_OUT; // Output G is the result of the NOT gate
+    assign H = FINAL_OUT; // Output H is the final result of the circuit
 
     // AND gates with scrambled connections
-    and u1 (W1, A, B);       // W1 = A AND B
-    and u2 (W2, W1, C);      // W2 = W1 AND C
-    and u3 (W3, D, W2);      // W3 = D AND W2
-    and u4 (W4, W3, A);      // W4 = W3 AND A
-    and u5 (W5, W4, W1);     // W5 = W4 AND W1
-    and u6 (W6, W5, W2);     // W6 = W5 AND W2
-    and u7 (W7, W6, W3);     // W7 = W6 AND W3
-    and u8 (W8, W7, W4);     // W8 = W7 AND W4
-    and u9 (W9, W8, W5);     // W9 = W8 AND W5
+    and u1 (AND_OUT, A, B);
+    or u2 (OR_OUT, A, C);
+    not u3 (INV_OUT, C);
+    and u4 (INTERMEDIATE1, OR_OUT, INV_OUT);
+    or u5 (INTERMEDIATE2, AND_OUT, INTERMEDIATE1);
+    and u6 (FINAL_OUT, INTERMEDIATE2, C);
 
-    // Outputs connected to scrambled wires
-    assign E = W6;           // Output E = W6
-    assign F = W7;           // Output F = W7
-    assign G = W8;           // Output G = W8
-    assign H = W9;           // Output H = W9
 
 endmodule
