@@ -175,21 +175,73 @@ for node in nodes:
     node_labels[node.conn_id] = f"{node.gate_type}: {node.name}"
 
 # Create a NetworkX graph
-G = nx.DiGraph()  # Use DiGraph for directed graphs
+G = nx.DiGraph()
 G.add_edges_from(edges)
 
 # Create a larger figure
 plt.figure(figsize=(15, 10))
 
-# Use spring layout with adjusted parameters to spread nodes
-pos = nx.spring_layout(G, k=1.5, iterations=50)
+# Create custom positions for nodes
+pos = {}
+
+# Position input nodes on the left side
+input_nodes = [node for node in io_nodes if node.gate_type == "input"]
+input_spacing = 2.0 / (len(input_nodes) + 1)
+for i, node in enumerate(input_nodes):
+    pos[node.conn_id] = (-2.0, 1.0 - (i + 1) * input_spacing)
+
+# Position output nodes on the right side
+output_nodes = [node for node in io_nodes if node.gate_type == "output"]
+output_spacing = 2.0 / (len(output_nodes) + 1)
+for i, node in enumerate(output_nodes):
+    pos[node.conn_id] = (2.0, 1.0 - (i + 1) * output_spacing)
+
+# Create layers for middle nodes based on connection distance from inputs
+layers = {}
+max_layers = 4  # Number of layers between inputs and outputs
+
+for node in nodes:
+    # Calculate layer based on input connections
+    input_connections = sum(1 for conn in node.conn_names if any(inp.name == conn for inp in input_nodes))
+    output_connections = sum(1 for out in output_nodes if out.name in node.conn_names)
+    
+    # Assign layer based on connections
+    if output_connections > 0:
+        layer = max_layers - 1
+    else:
+        layer = input_connections
+    
+    if layer not in layers:
+        layers[layer] = []
+    layers[layer].append(node)
+
+# Position nodes in each layer
+for layer_num, layer_nodes in layers.items():
+    x_pos = -1.5 + (3 * (layer_num + 1) / (max_layers + 1))
+    spacing = 2.0 / (len(layer_nodes) + 1)
+    
+    for i, node in enumerate(layer_nodes):
+        pos[node.conn_id] = (x_pos, 1.0 - (i + 1) * spacing)
+
+# Create node colors list
+node_colors = []
+highlighted_gates = ['u4', 'u5', 'u3']  # Gates to highlight in red
+
+# Assign colors to nodes based on their names
+for node_id in G.nodes():
+    # Get the node name from the label
+    node_name = node_labels[node_id].split(': ')[1]  # Extract name part after ':'
+    if node_name in highlighted_gates:
+        node_colors.append('red')
+    else:
+        node_colors.append('lightblue')
 
 # Plot the graph with custom styling
 nx.draw(G, 
         pos=pos,
         labels=node_labels, 
         with_labels=True, 
-        node_color='lightblue',
+        node_color=node_colors,  # Use the color list instead of a single color
         node_size=2500,
         font_size=8,
         font_weight='bold',
@@ -198,7 +250,9 @@ nx.draw(G,
         arrows=True,
         arrowsize=20)
 
-plt.title("Graph Visualization with Spread Out Nodes")
+plt.title("Circuit Graph: Inputs → Gates → Outputs")
+plt.axis('off')
+plt.tight_layout()
 plt.show()
 
 # Print the edge index
