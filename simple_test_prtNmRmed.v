@@ -1,6 +1,7 @@
 module simple_circuit ();
     input wire A, B, C;
     output wire E, F, G, H;
+    wire INTERMEDIATE1, INTERMEDIATE2;
     assign E = AND_OUT;
     assign F = OR_OUT;
     assign G = INV_OUT;
@@ -11,6 +12,4 @@ module simple_circuit ();
     and u4 (INTERMEDIATE1, OR_OUT, INV_OUT);
     or u5 (INTERMEDIATE2, AND_OUT, INTERMEDIATE1);
     and u6 (FINAL_OUT, INTERMEDIATE2, C);
-wire INTERMEDIATE1 (u4, u5);
-wire INTERMEDIATE2 (u5, u6);
 endmodule

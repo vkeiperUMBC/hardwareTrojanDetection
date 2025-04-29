@@ -10,6 +10,10 @@ def final_format(input_filepath, output_filepath):
     for line in lines:
         # Remove all starting tabs
         line = line.lstrip('\t')
+        # Replace all '[' and ']' with '_'
+        line = line.replace('[', '_').replace(']', '_')
+        # Remove bit declarations like 1'b0 and ensure proper comma handling
+        line = re.sub(r'\b\d+\'b[01]+\b,?', '', line).strip(',')
         current_line += line.strip()
         if current_line.endswith(';'):
             formatted_lines.append(current_line)
@@ -23,7 +27,7 @@ def final_format(input_filepath, output_filepath):
 
 def rmNl(input_file_path, output_file_path):
     """
-    Removes all comments and newlines between lines that end with a semicolon.
+    Removes all comments, newlines between lines that end with a semicolon, and all '/' and '\\' characters.
     
     Args:
         input_file_path (str): Path to the input file
@@ -37,6 +41,9 @@ def rmNl(input_file_path, output_file_path):
         # Remove multi-line comments first (/* ... */)
         import re
         content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
+        
+        # Remove all '/' and '\\' characters
+        content = content.replace('/', '').replace('\\', '')
         
         # Process the content line by line to handle single-line comments and semicolons
         lines = []
@@ -97,6 +104,43 @@ def wireHandle(input_file, output_file):
     with open(input_file, 'r') as file:
         lines = file.readlines()
     
+    for line in lines:
+        s_line = line.strip()
+        if (s_line.__contains__('[') or s_line.__contains__(']')) and (s_line.startswith('input') or s_line.startswith('output') or s_line.startswith('wire')):
+            # Extract the type (input/output/wire), range, and variable name
+            match = re.match(r'(\w+)\s*\[(\d+):(\d+)\]\s*(\w+);', s_line)
+            if match:
+                var_type, msb, lsb, var_name = match.groups()
+                msb, lsb = int(msb), int(lsb)
+                # Generate expanded variables
+                expanded_vars = [f"{var_name}_{i}" for i in range(lsb, msb + 1)]
+                # Create the new line
+                new_line = f"{var_type} {', '.join(expanded_vars)};"
+                lines[lines.index(line)] = new_line + '\n'
+         
+    input_lines = []
+    output_lines = []
+    wire_lines = []
+
+    for line in lines:
+        s_line = line.strip()
+        if s_line.startswith('input'):
+            input_lines.append(s_line.replace('input', '').strip(';').strip())
+        elif s_line.startswith('output'):
+            output_lines.append(s_line.replace('output', '').strip(';').strip())
+        elif s_line.startswith('wire'):
+            wire_lines.append(s_line.replace('wire', '').strip(';').strip())
+
+    combined_lines = []
+    if input_lines:
+        combined_lines.append("input wire " + ", ".join(input_lines) + ";\n")
+    if output_lines:
+        combined_lines.append("output wire " + ", ".join(output_lines) + ";\n")
+    if wire_lines:
+        combined_lines.append("wire " + ", ".join(wire_lines) + ";\n")
+
+    first_line = lines[0]
+    lines = [first_line] + combined_lines + [line for line in lines[1:] if not (line.strip().startswith('input') or line.strip().startswith('output') or line.strip().startswith('wire'))]
     wire_names = []
     wireLineNum = 0
     
@@ -133,17 +177,54 @@ def wireHandle(input_file, output_file):
                     file.write(formatted_line + '\n')
         
         
+def rmPortNames(input_file, output_file):
+    """
+    Removes port names from module declarations but keeps inputs and outputs intact.
+    Additionally, modifies gate instances to remove port names and adjust formatting.
     
+    Args:
+        input_file (str): Path to the input Verilog file.
+        output_file (str): Path to save the processed Verilog file.
+    """
+    with open(input_file, 'r') as file:
+        lines = file.readlines()
+    
+    processed_lines = []
+    for line in lines:
+        stripped_line = line.strip()
+        # Check if the line contains a module declaration
+        if stripped_line.startswith('module'):
+            # Remove everything after the first parenthesis
+            line = re.sub(r'\(.*\)', '()', line)
+        # Check if the line contains a gate instance
+        elif re.match(r'^\w+\s+\w+\s*\(.*\);', stripped_line):
+            # Remove port names and adjust formatting
+            line = re.sub(r'\.\w+\(([^)]+)\)', r'\1', line)  # Remove port names
+            line = re.sub(r'\s*,\s*', ', ', line)  # Ensure proper spacing for commas
+            line = re.sub(r'\(\s*', '(', line)  # Remove extra spaces after '('
+            line = re.sub(r'\s*\)', ')', line)  # Remove extra spaces before ')'
+            line = re.sub(r'\)\s*;', ');', line)  # Ensure proper closing
+        processed_lines.append(line)
+    
+    # Write the processed lines to the output file
+    with open(output_file, 'w') as file:
+        file.writelines(processed_lines)
+    
+        
+file_name = "uart"
 
 # Input and output file paths
-input_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\simple_test.v"
-preForm_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\simple_test_preform.v"
-wire_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\simple_test_wire.v"
-output_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\simple_test_formatted.v"
+input_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\" +file_name+".v"
+rmNlCmnt_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\"+file_name+"_NlCmntRmed.v"
+rmPortNm_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\" +file_name+"_prtNmRmed.v"
+wire_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\" +file_name+"_wire.v"
+output_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\" +file_name+"_formatted.v"
+
 
 # Format the Verilog file
-file_wo_newline = rmNl(input_filepath, preForm_filepath)
-wireHandle(preForm_filepath, wire_filepath)
+file_wo_newline = rmNl(input_filepath, rmNlCmnt_filepath)
+rmPortNames(rmNlCmnt_filepath,rmPortNm_filepath)
+wireHandle(rmPortNm_filepath, wire_filepath)
 final_format(wire_filepath, output_filepath)
 
 # print(f"Formatted Verilog file saved to {output_filepath}")
