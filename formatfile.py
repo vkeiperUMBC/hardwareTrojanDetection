@@ -11,7 +11,7 @@ def final_format(input_filepath, output_filepath):
         # Remove all starting tabs
         line = line.lstrip('\t')
         # Replace all '[' and ']' with '_'
-        line = line.replace('[', '_').replace(']', '_')
+        line = line.replace('[', '_').replace(']', '')
         # Remove bit declarations like 1'b0 and ensure proper comma handling
         line = re.sub(r'\b\d+\'b[01]+\b,?', '', line).strip(',')
         current_line += line.strip()
