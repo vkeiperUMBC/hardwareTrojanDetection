@@ -1,4 +1,5 @@
 import re
+import os
 
 def final_format(input_filepath, output_filepath):
     with open(input_filepath, 'r') as infile:
@@ -210,21 +211,42 @@ def rmPortNames(input_file, output_file):
     with open(output_file, 'w') as file:
         file.writelines(processed_lines)
     
-        
+def flip_assigns(input_file, output_file):
+    with open(input_file, 'r') as file:
+        lines = file.readlines()
+    for line in lines:
+        if line.__contains__('assign'):
+            old_line = line.strip()
+            lhs = old_line.split('=')[0].strip()
+            rhs = old_line.split('=')[1].strip().rstrip(';')
+            for line in lines:
+                if line.__contains__(rhs) and (line.startswith('input') or line.startswith('output')):
+                    new_line = f"assign {rhs} = {lhs};\n"
+                    lines[lines.index(line)] = new_line
+                    break                    
+    with open(output_file, 'w') as file:
+        file.writelines(lines)
+
+def format_file(file_name):
+    # Input and output file paths
+    input_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\" +file_name+".v"
+    rmNlCmnt_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\"+file_name+"_NlCmntRmed.v"
+    rmPortNm_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\" +file_name+"_prtNmRmed.v"
+    wire_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\" +file_name+"_wire.v"
+    ass_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\" +file_name+"_ass.v"
+    output_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\" +file_name+"_formatted.v"
+
+
+    # Format the Verilog file
+    rmNl(input_filepath, rmNlCmnt_filepath)
+    rmPortNames(rmNlCmnt_filepath,rmPortNm_filepath)
+    wireHandle(rmPortNm_filepath, wire_filepath)
+    # flip_assigns(wire_filepath,ass_filepath)
+    final_format(wire_filepath, output_filepath)
+    for filepath in [rmNlCmnt_filepath, rmPortNm_filepath, wire_filepath, ass_filepath]:
+        if os.path.exists(filepath):
+            os.remove(filepath)
+
+
 file_name = "uart"
-
-# Input and output file paths
-input_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\" +file_name+".v"
-rmNlCmnt_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\"+file_name+"_NlCmntRmed.v"
-rmPortNm_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\" +file_name+"_prtNmRmed.v"
-wire_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\" +file_name+"_wire.v"
-output_filepath = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\" +file_name+"_formatted.v"
-
-
-# Format the Verilog file
-file_wo_newline = rmNl(input_filepath, rmNlCmnt_filepath)
-rmPortNames(rmNlCmnt_filepath,rmPortNm_filepath)
-wireHandle(rmPortNm_filepath, wire_filepath)
-final_format(wire_filepath, output_filepath)
-
-# print(f"Formatted Verilog file saved to {output_filepath}")
+format_file(file_name)

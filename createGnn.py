@@ -4,10 +4,6 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import re
 
-file_name = "uart"
-verilog_file = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\"+file_name+"_formatted.v"
-
-
 # Define a class to represent a node in the graph
 class node:
     def __init__(self, name, gate_type, conn_names):
@@ -68,7 +64,7 @@ def pnl_IO(lines):
                     new_node = node(name=inp, gate_type="input", conn_names=[])
                     IO_nodes.append(new_node)
                     
-        if line.startswith("output"):
+        elif line.startswith("output"):
             match = re.match(r"output\s+wire\s+([\w,\s]+);", line)
             if match:
                 outputs = [outp.strip() for outp in match.group(1).split(",")]
@@ -77,17 +73,16 @@ def pnl_IO(lines):
                     IO_nodes.append(new_node)
                             
         # Detect gate connections and add them to input/output nodes
-        elif re.match(r"(\w+)\s+(\w+)\s*\((.*)\)\s*;", line):
-            match = re.match(r"(\w+)\s+(\w+)\s*\((.*)\)\s*;", line)
-            if match:
-                gate_type, gate_name, pin_block = match.groups()
-                conn_names = [conn.strip() for conn in pin_block.split(",")]
+        match = re.match(r"(\w+)\s+(\w+)\s*\((.*)\)\s*;", line)
+        if match:
+            gate_type, gate_name, pin_block = match.groups()
+            conn_names = [conn.strip() for conn in pin_block.split(",")]
 
-                # Add connections to input/output nodes
-                for conn in conn_names[1:]:  # Skip the first connection (output of the gate)
-                    for io_node in IO_nodes:
-                        if io_node.name == conn:
-                            io_node.conn_names.append(gate_name)
+            # Add connections to input/output nodes
+            for conn in conn_names:  # Skip the first connection (output of the gate)
+                for io_node in IO_nodes:
+                    if io_node.name == conn:
+                        io_node.conn_names.append(gate_name)
         
 
     return IO_nodes
@@ -103,6 +98,9 @@ def assignHandle(lines):
                 # Create a new node for the assignment
                 new_node = node(name=rhs, gate_type="assign", conn_names=[lhs.strip()])
                 assNodes.append(new_node)
+    # for line in lines:
+    #     for node in assNodes:
+    #         if line.contain
     return assNodes;
 
 
@@ -153,78 +151,86 @@ def read_verilog_file(filepath):
     # Return all lines without filtering
     return [line.strip() for line in lines]
 
-# Main script to parse the Verilog file and visualize the graph
-verilog_lines = read_verilog_file(verilog_file)
+def makeGnn(file_name):
+    verilog_file = "c:\\Users\\keipe\\Documents\\414\\hardwareTrojanDetection\\"+file_name+"_formatted.v"
 
-# Parse gates and inputs/outputs
-nodes = pnl_gates(verilog_lines)
-io_nodes = pnl_IO(verilog_lines)
-assNodes = assignHandle(verilog_lines)
-nodes = nodes + assNodes 
-# Construct the edge list
-edges = constructEdgeList(nodes, io_nodes,)
+    # Main script to parse the Verilog file and visualize the graph
+    verilog_lines = read_verilog_file(verilog_file)
 
-# Generate edge_index from nodes
-edge_index = torch.tensor(edges, dtype=torch.long)
+    # Parse gates and inputs/outputs
+    nodes = pnl_gates(verilog_lines)
+    io_nodes = pnl_IO(verilog_lines)
+    assNodes = assignHandle(verilog_lines)
+    nodes = nodes + assNodes 
+    # Construct the edge list
+    edges = constructEdgeList(nodes, io_nodes)
 
-# Convert edge_index to a list of edges
-edges = edge_index.t().tolist()
+    # Generate edge_index from nodes
+    edge_index = torch.tensor(edges, dtype=torch.long)
 
-# Create a mapping of node IDs to their types for labeling
-node_labels = {}
-for node in io_nodes:
-    node_labels[node.conn_id] = f"{node.gate_type}: {node.name}"
-for node in nodes:
-    node_labels[node.conn_id] = f"{node.gate_type}: {node.name}"
+    # Convert edge_index to a list of edges
+    edges = edge_index.t().tolist()
 
-print("Edge Index:")
-print(edge_index)
+    # Create a mapping of node IDs to their types for labeling
+    node_labels = {}
+    for node in io_nodes:
+        node_labels[node.conn_id] = f"{node.gate_type}: {node.name}"
+    for node in nodes:
+        node_labels[node.conn_id] = f"{node.gate_type}: {node.name}"
 
-import matplotlib.pyplot as plt
-import networkx as nx
+    print("Edge Index:")
+    print(edge_index)
+    # Check if 12 exists in the edge index and print its location
+    found = False
+    for i, edge in enumerate(edges):
+        if 12 in edge:
+            print(f"12 found at index {i}")
+            found = True
 
-# Create a NetworkX graph
-G = nx.DiGraph()
-G.add_edges_from(edges)
+    if not found:
+        print("12 not found")
 
-# Adjust the figure size to handle around 400 nodes
-plt.figure(figsize=(20, 20))  # Increase the figure size for better visualization
 
-# Use a layout suitable for large graphs
-# Options: spring_layout, circular_layout, shell_layout, kamada_kawai_layout
-pos = nx.spring_layout(G, k=0.5, iterations=50)  # Spring layout with adjusted parameters
+    # Create a NetworkX graph
+    G = nx.DiGraph()
+    G.add_edges_from(edges)
 
-# Print nodes in G in order
-print("Nodes in G (in order):", sorted(G.nodes))
+    # Adjust the figure size to handle around 400 nodes
+    plt.figure(figsize=(20, 20))  # Increase the figure size for better visualization
 
-# Print keys in pos in order
-print("Keys in pos (in order):", sorted(pos.keys()))
-print("Keys in node_labels:", node_labels.keys())
-print("Edges:", edges)
+    # Use a layout suitable for large graphs
+    # Options: spring_layout, circular_layout, shell_layout, kamada_kawai_layout
+    pos = nx.spring_layout(G, k=0.5, iterations=50)  # Spring layout with adjusted parameters
 
-disconnected_nodes = [node for node in G.nodes if G.degree[node] == 0]
-print("Disconnected Nodes:", disconnected_nodes)
+    # Print nodes in G in order
+    print("Nodes in G (in order):", sorted(G.nodes))
 
-# Plot the graph
-nx.draw(G,
-        pos=pos,
-        with_labels=True,
-        labels=node_labels,
-        node_color='lightblue',
-        node_size=500,  # Adjust node size for better visibility
-        font_size=6,    # Reduce font size to fit labels
-        font_weight='bold',
-        edge_color='gray',
-        arrows=True,
-        arrowsize=10)
 
-# Add a title and remove axis
-plt.title("Circuit Graph: Large Graph Visualization")
-plt.axis('off')
-plt.tight_layout()
-plt.show()
+    # Print keys in pos in order
+    # print("Keys in pos (in order):", sorted(pos.keys()))
+    # print("Keys in node_labels:", node_labels.keys())
+    # print("Edges:", edges)
 
-# Print the edge index
-print("Edge Index:")
-print(edge_index)
 
+    # Plot the graph
+    nx.draw(G,
+            pos=pos,
+            with_labels=True,
+            labels=node_labels,
+            node_color='lightblue',
+            node_size=500,  # Adjust node size for better visibility
+            font_size=6,    # Reduce font size to fit labels
+            font_weight='bold',
+            edge_color='gray',
+            arrows=True,
+            arrowsize=10)
+
+    # Add a title and remove axis
+    plt.title("Circuit Graph: Large Graph Visualization")
+    plt.axis('off')
+    plt.tight_layout()
+    plt.show()
+
+    # Print the edge index
+    print("Edge Index:")
+    print(edge_index)

@@ -50,7 +50,7 @@ module uart ( sys_clk, sys_rst_l, uart_XMIT_dataH, xmitH, xmit_dataH,
          n178, n179, n180;
   wire   [7:0] rec_dataH_rec;
   wire   [7:0] rec_dataH_temp;
-  assign \test_point/TM  = test_mode;
+  assign test_mode = \test_point/TM;
   assign test_so = rec_dataH_temp[7];
 
   AND2X4 U305 ( .IN1(iCTRL), .IN2(iXMIT_state_1_temp), .Q(iXMIT_state_1_) );
