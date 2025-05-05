@@ -102,11 +102,9 @@ def calculate_match_confidence(circuit_nodes, trojan_pattern):
 if __name__ == "__main__":
     # List of files to process
     file_w_tj = "simple_test_tj"    
-    file_wo_tj = "simple_test"
     
     trojans = "simple_trojan"
           
-    gnn_wo_tj = process_verilog_file(file_wo_tj)
     gnn_w_tj = process_verilog_file(file_w_tj)   
     gnn_tj = process_verilog_file(trojans)
     
