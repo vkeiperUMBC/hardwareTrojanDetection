@@ -1,0 +1,10 @@
+module trojan_circuit (A, INV_OUT, INTERMEDIATE1, FINAL_OUT, MODIFIED_OUT);
+    input A, INV_OUT, INTERMEDIATE1, FINAL_OUT;
+    output MODIFIED_OUT;
+    wire TRIGGER, PAYLOAD;
+
+    and t1 (TRIGGER, A, INV_OUT);
+    not t2 (PAYLOAD, INTERMEDIATE1);
+    or t3 (MODIFIED_OUT, FINAL_OUT, PAYLOAD);
+
+endmodule
