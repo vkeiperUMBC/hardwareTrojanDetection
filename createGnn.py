@@ -178,18 +178,6 @@ def makeGnn(file_name):
     for node in nodes:
         node_labels[node.conn_id] = f"{node.gate_type}: {node.name}"
 
-    print("Edge Index:")
-    print(edge_index)
-    # Check if 12 exists in the edge index and print its location
-    found = False
-    for i, edge in enumerate(edges):
-        if 12 in edge:
-            print(f"12 found at index {i}")
-            found = True
-
-    if not found:
-        print("12 not found")
-
 
     # Create a NetworkX graph
     G = nx.DiGraph()
@@ -202,14 +190,6 @@ def makeGnn(file_name):
     # Options: spring_layout, circular_layout, shell_layout, kamada_kawai_layout
     pos = nx.spring_layout(G, k=0.5, iterations=50)  # Spring layout with adjusted parameters
 
-    # Print nodes in G in order
-    print("Nodes in G (in order):", sorted(G.nodes))
-
-
-    # Print keys in pos in order
-    # print("Keys in pos (in order):", sorted(pos.keys()))
-    # print("Keys in node_labels:", node_labels.keys())
-    # print("Edges:", edges)
 
 
     # Plot the graph
@@ -230,7 +210,3 @@ def makeGnn(file_name):
     plt.axis('off')
     plt.tight_layout()
     plt.show()
-
-    # Print the edge index
-    print("Edge Index:")
-    print(edge_index)

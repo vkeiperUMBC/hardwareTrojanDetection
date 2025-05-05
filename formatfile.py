@@ -40,7 +40,6 @@ def rmNl(input_file_path, output_file_path):
             content = file.read()
         
         # Remove multi-line comments first (/* ... */)
-        import re
         content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
         
         # Remove all '/' and '\\' characters

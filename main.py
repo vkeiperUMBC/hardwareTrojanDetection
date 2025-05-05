@@ -27,8 +27,8 @@ def process_verilog_file(file_name):
 if __name__ == "__main__":
     # List of files to process
     files_to_process = [
-        "simple_test"#,
-        # "uart"
+        # "simple_test",
+        "uart"
     ]
     
     # Process each file
