@@ -242,11 +242,87 @@ def makeGnn(file_name):
     plt.title("Circuit Graph: Inputs → Gates → Outputs")
     plt.axis('off')
     plt.tight_layout()
-    plt.draw()  # Use draw() instead of show()
-    plt.pause(5)  # Add a small pause to ensure the plot appears
 
+    # Save the plot as a PNG file
+    output_file = f"{file_name}_circuit_graph.png"
+    plt.savefig(output_file, format='png')
+    print(f"Graph saved as {output_file}")
+    
     # Print the edge index
     print("Edge Index:")
     print(edge_index)
     
     return edges, edge_index, io_nodes, nodes, node_labels
+
+def plot_clean_gnn(clean_gnn, title="Clean Circuit Graph"):
+    """
+    Plot a GNN after trojan removal.
+    
+    Args:
+        clean_gnn (dict): GNN representation of the clean circuit
+        title (str): Title for the plot
+    """
+    # Create a NetworkX graph
+    G = nx.DiGraph()
+    G.add_edges_from(clean_gnn['edges'])
+
+    # Create custom positions for nodes
+    pos = {}
+    
+    # Position input nodes on the left
+    input_nodes = [node for node in clean_gnn['io_nodes'] if node.gate_type == "input"]
+    input_spacing = 2.0 / (len(input_nodes) + 1)
+    for i, node in enumerate(input_nodes):
+        pos[node.conn_id] = (-2.0, 1.0 - (i + 1) * input_spacing)
+
+    # Position output nodes on the right
+    output_nodes = [node for node in clean_gnn['io_nodes'] if node.gate_type == "output"]
+    output_spacing = 2.0 / (len(output_nodes) + 1)
+    for i, node in enumerate(output_nodes):
+        pos[node.conn_id] = (2.0, 1.0 - (i + 1) * output_spacing)
+
+    # Calculate layers for other nodes
+    layers = {}
+    max_layers = 4
+
+    # Assign layers based on connection distance from inputs
+    for node in clean_gnn['nodes']:
+        input_connections = sum(1 for conn in node.conn_names if any(inp.name == conn for inp in input_nodes))
+        output_connections = sum(1 for out in output_nodes if out.name in node.conn_names)
+        
+        if output_connections > 0:
+            layer = max_layers - 1
+        else:
+            layer = min(max_layers - 1, input_connections)
+        
+        if layer not in layers:
+            layers[layer] = []
+        layers[layer].append(node)
+
+    # Position nodes in each layer
+    for layer_num, layer_nodes in layers.items():
+        x_pos = -1.5 + (3 * (layer_num + 1) / (max_layers + 1))
+        spacing = 2.0 / (len(layer_nodes) + 1)
+        
+        for i, node in enumerate(layer_nodes):
+            pos[node.conn_id] = (x_pos, 1.0 - (i + 1) * spacing)
+
+    # Create new figure
+    plt.figure(figsize=(15, 10))
+    nx.draw(G,
+            pos=pos,
+            with_labels=True,
+            labels=clean_gnn['node_labels'],
+            node_color='lightgreen',  # Different color to distinguish from original
+            node_size=2000,
+            font_size=8,
+            font_weight='bold',
+            edge_color='gray',
+            arrows=True,
+            arrowsize=20)
+
+    plt.title(title)
+    plt.axis('off')
+    plt.tight_layout()
+    plt.draw()
+    plt.pause(5)  # Short pause to ensure plot appears
